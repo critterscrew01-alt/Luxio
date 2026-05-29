@@ -87,30 +87,10 @@ export default function Mint() {
         justifyContent: 'center',
         flexDirection: 'column',
         padding: '2rem',
+        paddingTop: '5rem',
         position: 'relative',
       }}
     >
-      {/* Back */}
-      <button
-        onClick={() => navigate('/home')}
-        style={{
-          position: 'absolute',
-          top: '1.5rem',
-          left: '1.5rem',
-          background: 'rgba(255,255,255,0.12)',
-          border: 'none',
-          borderRadius: '100px',
-          padding: '8px 18px',
-          fontFamily: "'Bangers', cursive",
-          fontSize: '0.95rem',
-          letterSpacing: '0.08em',
-          color: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        ← BACK
-      </button>
-
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -129,7 +109,6 @@ export default function Mint() {
           gap: '1.5rem',
         }}
       >
-        {/* Lock icon */}
         <motion.div
           animate={{ y: [0, -8, 0] }}
           transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
@@ -166,7 +145,6 @@ export default function Mint() {
             : 'Mint unlocks for whitelisted Outworlders in:'}
         </p>
 
-        {/* Countdown */}
         {!done && (
           <div
             style={{
