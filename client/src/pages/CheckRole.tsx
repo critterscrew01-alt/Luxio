@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { checkStatus, type ApplicationStatus } from '../lib/supabase';
 
-const STATUS_MAP: Record<<ApplicationStatus, { label: string; emoji: string; color: string; bg: string }> = {
+const STATUS_MAP: Record<ApplicationStatus, { label: string; emoji: string; color: string; bg: string }> = {
   approved:  { label: 'WHITELISTED',   emoji: '✅', color: '#1a4a2a', bg: '#b8f5c8' },
   pending:   { label: 'UNDER REVIEW',  emoji: '⏳', color: '#4a3a0a', bg: '#fef3b0' },
   rejected:  { label: 'NOT SELECTED',  emoji: '❌', color: '#4a1a1a', bg: '#fbb0b0' },
