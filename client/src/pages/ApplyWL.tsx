@@ -48,8 +48,8 @@ const TASKS: {
 
 export default function ApplyWL() {
   const [done, setDone] = useState<Set<TaskKey>>(new Set());
-  const [inputs, setInputs] = useState<Partial<<Record<TaskKey, string>>>({});
-  const [errors, setErrors] = useState<Partial<<Record<TaskKey | 'submit', string>>>({});
+  const [inputs, setInputs] = useState<Partial<Record<TaskKey, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<TaskKey | 'submit', string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const { xUsername } = useUser();
@@ -74,7 +74,7 @@ export default function ApplyWL() {
   };
 
   const submit = async () => {
-    const errs: Partial<<Record<TaskKey | 'submit', string>> = {};
+    const errs: Partial<Record<TaskKey | 'submit', string>> = {};
     if (!inputs.wallet?.trim()) errs.wallet = 'Wallet address required';
     if (done.has('quote') && !inputs.quote?.trim()) errs.quote = 'Paste your quote link';
     if (done.has('tag') && !inputs.tag?.trim()) errs.tag = 'Paste your comment link';
