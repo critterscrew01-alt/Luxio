@@ -98,29 +98,10 @@ export default function Gallery() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem',
+        paddingTop: '5rem',
         position: 'relative',
       }}
     >
-      <button
-        onClick={() => navigate('/home')}
-        style={{
-          position: 'absolute',
-          top: '1.5rem',
-          left: '1.5rem',
-          background: 'rgba(0,0,0,0.15)',
-          border: 'none',
-          borderRadius: '100px',
-          padding: '8px 18px',
-          fontFamily: "'Bangers', cursive",
-          fontSize: '0.95rem',
-          letterSpacing: '0.08em',
-          color: '#333',
-          cursor: 'pointer',
-        }}
-      >
-        ← BACK
-      </button>
-
       <motion.h1
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
