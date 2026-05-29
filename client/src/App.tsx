@@ -6,14 +6,12 @@ import Gallery from './pages/Gallery';
 import ApplyWL from './pages/ApplyWL';
 import CheckRole from './pages/CheckRole';
 import Mint from './pages/Mint';
-import { Navbar } from './components/Navbar';
+import { StaticMenu, FloatingMenu } from './components/FloatingMenu';
 
-// ─── Global user context ──────────────────────────────────────────────────────
 type UserCtx = { xUsername: string; setXUsername: (v: string) => void };
 export const UserContext = createContext<UserCtx>({ xUsername: '', setXUsername: () => {} });
 export const useUser = () => useContext(UserContext);
 
-// ─── Google Fonts ─────────────────────────────────────────────────────────────
 const FontLoader = () => (
   <>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -28,23 +26,15 @@ const FontLoader = () => (
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { xUsername } = useUser();
   const [, navigate] = useLocation();
-  if (!xUsername) {
-    navigate('/');
-    return null;
-  }
+  if (!xUsername) { navigate('/'); return null; }
   return <Component />;
 }
 
 export default function App() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
-  // Restore username from localStorage so refresh doesn't reset auth
   const [xUsername, setXUsernameState] = useState(() => {
-    try {
-      return localStorage.getItem('x_username') || '';
-    } catch {
-      return '';
-    }
+    try { return localStorage.getItem('x_username') || ''; } catch { return ''; }
   });
 
   const setXUsername = (v: string) => {
@@ -55,32 +45,26 @@ export default function App() {
     } catch {}
   };
 
-  const showNav = xUsername && location !== '/' && location !== '/home';
+  const isLanding = location === '/';
+  const isHome    = location === '/home';
 
   return (
     <UserContext.Provider value={{ xUsername, setXUsername }}>
       <FontLoader />
-      {showNav && <Navbar />}
+
+      {/* Inner pages only — floating hamburger */}
+      {xUsername && !isLanding && !isHome && (
+        <FloatingMenu onNavigate={navigate} />
+      )}
+
       <Switch>
         <Route path="/" component={Landing} />
-        <Route path="/home">
-          {() => <ProtectedRoute component={Home} />}
-        </Route>
-        <Route path="/gallery">
-          {() => <ProtectedRoute component={Gallery} />}
-        </Route>
-        <Route path="/apply">
-          {() => <ProtectedRoute component={ApplyWL} />}
-        </Route>
-        <Route path="/check-role">
-          {() => <ProtectedRoute component={CheckRole} />}
-        </Route>
-        <Route path="/mint">
-          {() => <ProtectedRoute component={Mint} />}
-        </Route>
-        <Route>
-          {() => { window.location.href = '/'; return null; }}
-        </Route>
+        <Route path="/home">{() => <ProtectedRoute component={Home} />}</Route>
+        <Route path="/gallery">{() => <ProtectedRoute component={Gallery} />}</Route>
+        <Route path="/apply">{() => <ProtectedRoute component={ApplyWL} />}</Route>
+        <Route path="/check-role">{() => <ProtectedRoute component={CheckRole} />}</Route>
+        <Route path="/mint">{() => <ProtectedRoute component={Mint} />}</Route>
+        <Route>{() => { window.location.href = '/'; return null; }}</Route>
       </Switch>
     </UserContext.Provider>
   );
