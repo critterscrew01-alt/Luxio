@@ -21,7 +21,7 @@ const TASKS: {
   },
   {
     key: 'quote',
-    label: 'QT PINNED POST',
+    label: 'QT PINNED POST WITH BULLISH',
     url: 'https://x.com/luxioart',
     needsInput: true,
     inputPlaceholder: 'Paste your quote tweet link',
