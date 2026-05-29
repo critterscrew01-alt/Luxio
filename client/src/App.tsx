@@ -6,6 +6,7 @@ import Gallery from './pages/Gallery';
 import ApplyWL from './pages/ApplyWL';
 import CheckRole from './pages/CheckRole';
 import Mint from './pages/Mint';
+import { Navbar } from './components/Navbar';
 
 // ─── Global user context ──────────────────────────────────────────────────────
 type UserCtx = { xUsername: string; setXUsername: (v: string) => void };
@@ -35,11 +36,31 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 export default function App() {
-  const [xUsername, setXUsername] = useState('');
+  const [location] = useLocation();
+
+  // Restore username from localStorage so refresh doesn't reset auth
+  const [xUsername, setXUsernameState] = useState(() => {
+    try {
+      return localStorage.getItem('x_username') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const setXUsername = (v: string) => {
+    setXUsernameState(v);
+    try {
+      if (v) localStorage.setItem('x_username', v);
+      else localStorage.removeItem('x_username');
+    } catch {}
+  };
+
+  const showNav = xUsername && location !== '/';
 
   return (
     <UserContext.Provider value={{ xUsername, setXUsername }}>
       <FontLoader />
+      {showNav && <Navbar />}
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/home">
