@@ -8,3 +8,30 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'not_found';
+
+export type WhitelistApplication = {
+  x_username: string;
+  wallet: string;
+  x_link: string;
+  quote_link?: string;
+  tag_link?: string;
+  tasks_done: string[];
+};
+
+export async function submitApplication(data: WhitelistApplication) {
+  const { error } = await supabase.from('whitelist_applications').insert([data]);
+  if (error) throw error;
+}
+
+export async function checkStatus(wallet: string): Promise<ApplicationStatus> {
+  const { data, error } = await supabase
+    .from('whitelist_applications')
+    .select('status')
+    .ilike('wallet', wallet.trim())
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return 'not_found';
+  return data.status as ApplicationStatus;
+}
