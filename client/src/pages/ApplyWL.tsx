@@ -22,19 +22,19 @@ const TASKS: {
   {
     key: 'quote',
     label: 'QT PINNED POST',
-    url: 'https://x.com/outworld3rs/status/2052376246986948946',
+    url: 'https://x.com/luxioart',
     needsInput: true,
     inputPlaceholder: 'Paste your quote tweet link',
   },
   {
     key: 'like',
     label: 'LIKE PINNED POST',
-    url: 'https://x.com/outworld3rs/status/2052376246986948946',
+    url: 'https://x.com/luxioart',
   },
   {
     key: 'tag',
     label: 'TAG 2 FRIENDS IN PINNED POST',
-    url: 'https://x.com/outworld3rs/status/2052376246986948946',
+    url: 'https://x.com/luxioart',
     needsInput: true,
     inputPlaceholder: 'Paste the comment link',
   },
