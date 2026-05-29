@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { useUser } from '../App';
+import { BACKGROUND_IMAGES } from '../assets';
 
 const menuItems = [
   { label: 'GALLERY', path: '/gallery' },
@@ -25,9 +26,8 @@ export default function Home() {
         alignItems: 'stretch',
       }}
     >
-      {/* Full background character image */}
       <img
-        src="/attached_assets/image2.jpg"
+        src={BACKGROUND_IMAGES.image2}
         alt=""
         style={{
           position: 'absolute',
@@ -39,7 +39,6 @@ export default function Home() {
         }}
       />
 
-      {/* Dark overlay */}
       <div
         style={{
           position: 'absolute',
@@ -48,7 +47,6 @@ export default function Home() {
         }}
       />
 
-      {/* Left side menu */}
       <motion.div
         initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -114,7 +112,6 @@ export default function Home() {
         ))}
       </motion.div>
 
-      {/* Username watermark top-right */}
       <div
         style={{
           position: 'absolute',
