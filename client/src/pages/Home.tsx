@@ -24,6 +24,7 @@ export default function Home() {
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'stretch',
+        paddingTop: '5rem',
       }}
     >
       <img
@@ -115,7 +116,7 @@ export default function Home() {
       <div
         style={{
           position: 'absolute',
-          top: '1.5rem',
+          top: '5.5rem',
           right: '1.5rem',
           zIndex: 10,
           fontFamily: "'Nunito', sans-serif",
