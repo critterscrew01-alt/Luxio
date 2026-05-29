@@ -55,7 +55,7 @@ export default function App() {
     } catch {}
   };
 
-  const showNav = xUsername && location !== '/';
+  const showNav = xUsername && location !== '/' && location !== '/home';
 
   return (
     <UserContext.Provider value={{ xUsername, setXUsername }}>
