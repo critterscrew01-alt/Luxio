@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 // Set your target date here
-const TARGET_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+const TARGET_DATE = new Date('2026-06-05T00:00:00Z');
 
 function useCountdown(target: Date) {
   const calc = () => {
