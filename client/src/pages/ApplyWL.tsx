@@ -9,97 +9,98 @@ type TaskKey = 'follow' | 'quote' | 'like' | 'tag' | 'wallet';
 const TASKS: {
   key: TaskKey;
   label: string;
-  url?: string;
-  needsInput?: boolean;
-  inputPlaceholder?: string;
+  placeholder: string;
   isWallet?: boolean;
 }[] = [
   {
     key: 'follow',
     label: 'FOLLOW LUXIO',
-    url: 'https://x.com/luxioart',
+    placeholder: 'Paste your profile/follow link',
   },
   {
     key: 'quote',
     label: 'QT PINNED POST WITH BULLISH',
-    url: 'https://x.com/luxioart',
-    needsInput: true,
-    inputPlaceholder: 'Paste your quote tweet link',
+    placeholder: 'Paste your quote tweet link',
   },
   {
     key: 'like',
     label: 'LIKE PINNED POST',
-    url: 'https://x.com/luxioart',
+    placeholder: 'Paste the post link you liked',
   },
   {
     key: 'tag',
     label: 'TAG 2 FRIENDS IN PINNED POST',
-    url: 'https://x.com/luxioart',
-    needsInput: true,
-    inputPlaceholder: 'Paste the comment link',
+    placeholder: 'Paste your comment link',
   },
   {
     key: 'wallet',
     label: 'SUBMIT YOUR EVM WALLET',
+    placeholder: '0x…',
     isWallet: true,
-    inputPlaceholder: '0x…',
   },
 ];
 
-// Basic EVM address regex: 0x followed by 40 hex chars
 const EVM_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'rgba(255,255,255,0.7)',
+  border: '1.5px solid rgba(0,0,0,0.1)',
+  borderRadius: '10px',
+  padding: '10px 14px',
+  fontFamily: "'Nunito', sans-serif",
+  fontWeight: 700,
+  fontSize: '0.82rem',
+  color: '#333',
+  outline: 'none',
+  boxSizing: 'border-box',
+  marginTop: '8px',
+};
+
+const walletInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  background: '#1a1a1a',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '10px',
+};
+
 export default function ApplyWL() {
-  const [done, setDone] = useState<Set<TaskKey>>(new Set());
-  const [inputs, setInputs] = useState<Partial<Record<TaskKey, string>>>({
-    wallet: '', // always start empty
-  });
+  const [inputs, setInputs] = useState<Partial<Record<TaskKey, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<TaskKey | 'submit', string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const { xUsername } = useUser();
   const [, navigate] = useLocation();
 
-  // Remember submission across refreshes
   useEffect(() => {
     if (xUsername && localStorage.getItem(`wl_submitted_${xUsername}`)) {
       setSuccess(true);
     }
   }, [xUsername]);
 
-  const openTask = (task: (typeof TASKS)[0]) => {
-    if (task.url) window.open(task.url, '_blank');
-    if (!task.needsInput && !task.isWallet) {
-      setTimeout(() => markDone(task.key), 1200);
-    }
-  };
-
-  const markDone = (key: TaskKey) => {
-    setDone(p => new Set([...p, key]));
+  const setField = (key: TaskKey, value: string) => {
+    setInputs(p => ({ ...p, [key]: value }));
     setErrors(p => { const n = { ...p }; delete n[key]; return n; });
   };
 
   const submit = async () => {
     const errs: Partial<Record<TaskKey | 'submit', string>> = {};
 
-    // 1. Every task must be marked done
+    // All link fields required
     for (const t of TASKS) {
-      if (!done.has(t.key)) {
-        errs[t.key] = 'Required — complete this task';
+      if (!t.isWallet && !inputs[t.key]?.trim()) {
+        errs[t.key] = 'This field is required';
       }
     }
 
-    // 2. Wallet must be present AND a valid EVM address
+    // Wallet validation
     const wallet = inputs.wallet?.trim();
     if (!wallet) {
       errs.wallet = 'Wallet address required';
     } else if (!EVM_REGEX.test(wallet)) {
       errs.wallet = 'Invalid EVM address (must be 0x + 40 hex chars)';
     }
-
-    // 3. Link inputs must be filled when their task is done
-    if (done.has('quote') && !inputs.quote?.trim()) errs.quote = 'Paste your quote tweet link';
-    if (done.has('tag') && !inputs.tag?.trim()) errs.tag = 'Paste your comment link';
 
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -111,10 +112,10 @@ export default function ApplyWL() {
       await submitApplication({
         x_username: xUsername,
         wallet: wallet!,
-        x_link: `https://x.com/${xUsername}`,
+        x_link: inputs.follow?.trim() ?? '',
         quote_link: inputs.quote?.trim(),
         tag_link: inputs.tag?.trim(),
-        tasks_done: [...done],
+        tasks_done: TASKS.map(t => t.key),
       });
       localStorage.setItem(`wl_submitted_${xUsername}`, 'true');
       setSuccess(true);
@@ -139,7 +140,6 @@ export default function ApplyWL() {
         position: 'relative',
       }}
     >
-      {/* Card */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -166,145 +166,44 @@ export default function ApplyWL() {
           APPLY FOR WHITELIST
         </h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {TASKS.map(task => {
-            const isDone = done.has(task.key);
-            return (
-              <div key={task.key}>
-                {/* Task row */}
-                <div
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {TASKS.map(task => (
+            <div key={task.key}>
+              <div
+                style={{
+                  background: 'rgba(240,234,228,0.9)',
+                  borderRadius: '14px',
+                  padding: '14px 18px',
+                }}
+              >
+                <span
                   style={{
-                    background: 'rgba(240,234,228,0.9)',
-                    borderRadius: '14px',
-                    padding: '14px 18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
+                    fontFamily: "'Bangers', cursive",
+                    fontSize: '0.95rem',
+                    letterSpacing: '0.06em',
+                    color: '#1a1a1a',
+                    display: 'block',
+                    marginBottom: '2px',
                   }}
                 >
-                  <span
-                    style={{
-                      fontFamily: "'Bangers', cursive",
-                      fontSize: '0.95rem',
-                      letterSpacing: '0.06em',
-                      color: isDone ? '#888' : '#1a1a1a',
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      flex: 1,
-                    }}
-                  >
-                    {task.label}
-                  </span>
+                  {task.label}
+                </span>
 
-                  {task.isWallet ? (
-                    <input
-                      value={inputs.wallet ?? ''}
-                      onChange={e => {
-                        setInputs(p => ({ ...p, wallet: e.target.value }));
-                        setErrors(p => { const n = { ...p }; delete n.wallet; return n; });
-                        if (e.target.value.trim()) markDone('wallet');
-                        else setDone(p => { const n = new Set(p); n.delete('wallet'); return n; });
-                      }}
-                      placeholder="0x…"
-                      style={{
-                        background: '#1a1a1a',
-                        border: 'none',
-                        borderRadius: '100px',
-                        padding: '8px 16px',
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        color: '#fff',
-                        outline: 'none',
-                        width: '130px',
-                        textAlign: 'center',
-                      }}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (!isDone) openTask(task);
-                      }}
-                      style={{
-                        background: '#1a1a1a',
-                        border: 'none',
-                        borderRadius: '100px',
-                        padding: '8px 20px',
-                        fontFamily: "'Bangers', cursive",
-                        fontSize: '0.85rem',
-                        letterSpacing: '0.08em',
-                        color: '#fff',
-                        cursor: isDone ? 'default' : 'pointer',
-                        whiteSpace: 'nowrap',
-                        minWidth: '80px',
-                      }}
-                    >
-                      {isDone ? 'DONE ✓' : 'GO →'}
-                    </button>
-                  )}
-                </div>
-
-                {/* Input field for tasks needing a link */}
-                {task.needsInput && isDone && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    style={{ marginTop: '6px', paddingLeft: '8px', paddingRight: '8px' }}
-                  >
-                    <input
-                      value={inputs[task.key] || ''}
-                      onChange={e => {
-                        setInputs(p => ({ ...p, [task.key]: e.target.value }));
-                        setErrors(p => { const n = { ...p }; delete n[task.key]; return n; });
-                      }}
-                      placeholder={task.inputPlaceholder}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.7)',
-                        border: '1.5px solid rgba(0,0,0,0.1)',
-                        borderRadius: '10px',
-                        padding: '10px 14px',
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700,
-                        fontSize: '0.82rem',
-                        color: '#333',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </motion.div>
-                )}
-
-                {/* For link tasks not yet marked done, show a "Mark done" helper after clicking */}
-                {task.needsInput && !isDone && task.url && (
-                  <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
-                    <button
-                      onClick={() => markDone(task.key)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        fontSize: '0.7rem',
-                        fontFamily: "'Nunito', sans-serif",
-                        fontWeight: 700,
-                        color: '#888',
-                        cursor: 'pointer',
-                        padding: '2px 0',
-                      }}
-                    >
-                      ✓ I've done this
-                    </button>
-                  </div>
-                )}
-
-                {/* Unified error display for this task */}
-                {errors[task.key] && (
-                  <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', paddingLeft: '8px', fontWeight: 700 }}>
-                    {errors[task.key]}
-                  </p>
-                )}
+                <input
+                  value={inputs[task.key] ?? ''}
+                  onChange={e => setField(task.key, e.target.value)}
+                  placeholder={task.placeholder}
+                  style={task.isWallet ? walletInputStyle : inputStyle}
+                />
               </div>
-            );
-          })}
+
+              {errors[task.key] && (
+                <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', paddingLeft: '8px', fontWeight: 700 }}>
+                  {errors[task.key]}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
 
         {errors.submit && (
@@ -345,7 +244,7 @@ export default function ApplyWL() {
             fontWeight: 700,
           }}
         >
-          Quote & tag links are manually reviewed.
+          All links are manually reviewed.
         </p>
       </motion.div>
 
