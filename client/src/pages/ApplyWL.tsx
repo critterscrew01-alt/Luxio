@@ -9,63 +9,45 @@ type TaskKey = 'follow' | 'quote' | 'like' | 'tag' | 'wallet';
 const TASKS: {
   key: TaskKey;
   label: string;
-  placeholder: string;
+  url?: string;
+  goButton?: boolean;       // shows GO button, auto-marks done
+  inputPlaceholder?: string; // always-visible input box
   isWallet?: boolean;
 }[] = [
   {
     key: 'follow',
     label: 'FOLLOW LUXIO',
-    placeholder: 'Paste your profile/follow link',
+    url: 'https://x.com/luxioart',
+    goButton: true,
   },
   {
     key: 'quote',
     label: 'QT PINNED POST WITH BULLISH',
-    placeholder: 'Paste your quote tweet link',
+    inputPlaceholder: 'Paste your quote tweet link',
   },
   {
     key: 'like',
     label: 'LIKE PINNED POST',
-    placeholder: 'Paste the post link you liked',
+    url: 'https://x.com/luxioart',
+    goButton: true,
   },
   {
     key: 'tag',
     label: 'TAG 2 FRIENDS IN PINNED POST',
-    placeholder: 'Paste your comment link',
+    inputPlaceholder: 'Paste your comment link',
   },
   {
     key: 'wallet',
     label: 'SUBMIT YOUR EVM WALLET',
-    placeholder: '0x…',
     isWallet: true,
+    inputPlaceholder: '0x…',
   },
 ];
 
 const EVM_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: 'rgba(255,255,255,0.7)',
-  border: '1.5px solid rgba(0,0,0,0.1)',
-  borderRadius: '10px',
-  padding: '10px 14px',
-  fontFamily: "'Nunito', sans-serif",
-  fontWeight: 700,
-  fontSize: '0.82rem',
-  color: '#333',
-  outline: 'none',
-  boxSizing: 'border-box',
-  marginTop: '8px',
-};
-
-const walletInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  background: '#1a1a1a',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '10px',
-};
-
 export default function ApplyWL() {
+  const [done, setDone] = useState<Set<TaskKey>>(new Set());
   const [inputs, setInputs] = useState<Partial<Record<TaskKey, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<TaskKey | 'submit', string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -79,20 +61,31 @@ export default function ApplyWL() {
     }
   }, [xUsername]);
 
+  const markDone = (key: TaskKey) => {
+    setDone(p => new Set([...p, key]));
+    setErrors(p => { const n = { ...p }; delete n[key]; return n; });
+  };
+
   const setField = (key: TaskKey, value: string) => {
     setInputs(p => ({ ...p, [key]: value }));
     setErrors(p => { const n = { ...p }; delete n[key]; return n; });
+    // wallet: mark done when non-empty
+    if (key === 'wallet') {
+      if (value.trim()) markDone('wallet');
+      else setDone(p => { const n = new Set(p); n.delete('wallet'); return n; });
+    }
   };
 
   const submit = async () => {
     const errs: Partial<Record<TaskKey | 'submit', string>> = {};
 
-    // All link fields required
-    for (const t of TASKS) {
-      if (!t.isWallet && !inputs[t.key]?.trim()) {
-        errs[t.key] = 'This field is required';
-      }
-    }
+    // GO-button tasks must be marked done
+    if (!done.has('follow')) errs.follow = 'Required — complete this task';
+    if (!done.has('like'))   errs.like   = 'Required — complete this task';
+
+    // Input-box tasks must have a value
+    if (!inputs.quote?.trim()) errs.quote = 'Paste your quote tweet link';
+    if (!inputs.tag?.trim())   errs.tag   = 'Paste your comment link';
 
     // Wallet validation
     const wallet = inputs.wallet?.trim();
@@ -102,20 +95,17 @@ export default function ApplyWL() {
       errs.wallet = 'Invalid EVM address (must be 0x + 40 hex chars)';
     }
 
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
-    }
+    if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setSubmitting(true);
     try {
       await submitApplication({
         x_username: xUsername,
         wallet: wallet!,
-        x_link: inputs.follow?.trim() ?? '',
+        x_link: `https://x.com/${xUsername}`,
         quote_link: inputs.quote?.trim(),
         tag_link: inputs.tag?.trim(),
-        tasks_done: TASKS.map(t => t.key),
+        tasks_done: [...done],
       });
       localStorage.setItem(`wl_submitted_${xUsername}`, 'true');
       setSuccess(true);
@@ -166,44 +156,116 @@ export default function ApplyWL() {
           APPLY FOR WHITELIST
         </h2>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {TASKS.map(task => (
-            <div key={task.key}>
-              <div
-                style={{
-                  background: 'rgba(240,234,228,0.9)',
-                  borderRadius: '14px',
-                  padding: '14px 18px',
-                }}
-              >
-                <span
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {TASKS.map(task => {
+            const isDone = done.has(task.key);
+            return (
+              <div key={task.key}>
+                <div
                   style={{
-                    fontFamily: "'Bangers', cursive",
-                    fontSize: '0.95rem',
-                    letterSpacing: '0.06em',
-                    color: '#1a1a1a',
-                    display: 'block',
-                    marginBottom: '2px',
+                    background: 'rgba(240,234,228,0.9)',
+                    borderRadius: '14px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    flexDirection: task.goButton ? 'row' : 'column',
+                    alignItems: task.goButton ? 'center' : 'flex-start',
+                    justifyContent: task.goButton ? 'space-between' : 'flex-start',
+                    gap: '10px',
                   }}
                 >
-                  {task.label}
-                </span>
+                  <span
+                    style={{
+                      fontFamily: "'Bangers', cursive",
+                      fontSize: '0.95rem',
+                      letterSpacing: '0.06em',
+                      color: isDone ? '#888' : '#1a1a1a',
+                      textDecoration: isDone && task.goButton ? 'line-through' : 'none',
+                      flex: task.goButton ? 1 : undefined,
+                    }}
+                  >
+                    {task.label}
+                  </span>
 
-                <input
-                  value={inputs[task.key] ?? ''}
-                  onChange={e => setField(task.key, e.target.value)}
-                  placeholder={task.placeholder}
-                  style={task.isWallet ? walletInputStyle : inputStyle}
-                />
+                  {/* GO button tasks (follow, like) */}
+                  {task.goButton && (
+                    <button
+                      onClick={() => {
+                        if (!isDone) {
+                          window.open(task.url, '_blank');
+                          setTimeout(() => markDone(task.key), 1200);
+                        }
+                      }}
+                      style={{
+                        background: '#1a1a1a',
+                        border: 'none',
+                        borderRadius: '100px',
+                        padding: '8px 20px',
+                        fontFamily: "'Bangers', cursive",
+                        fontSize: '0.85rem',
+                        letterSpacing: '0.08em',
+                        color: '#fff',
+                        cursor: isDone ? 'default' : 'pointer',
+                        whiteSpace: 'nowrap',
+                        minWidth: '80px',
+                      }}
+                    >
+                      {isDone ? 'DONE ✓' : 'GO →'}
+                    </button>
+                  )}
+
+                  {/* Always-visible input tasks (quote, tag) */}
+                  {task.inputPlaceholder && !task.isWallet && (
+                    <input
+                      value={inputs[task.key] ?? ''}
+                      onChange={e => setField(task.key, e.target.value)}
+                      placeholder={task.inputPlaceholder}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.7)',
+                        border: '1.5px solid rgba(0,0,0,0.1)',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        color: '#333',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  )}
+
+                  {/* Wallet input */}
+                  {task.isWallet && (
+                    <input
+                      value={inputs.wallet ?? ''}
+                      onChange={e => setField('wallet', e.target.value)}
+                      placeholder="0x…"
+                      style={{
+                        width: '100%',
+                        background: '#1a1a1a',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        color: '#fff',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  )}
+                </div>
+
+                {errors[task.key] && (
+                  <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', paddingLeft: '8px', fontWeight: 700 }}>
+                    {errors[task.key]}
+                  </p>
+                )}
               </div>
-
-              {errors[task.key] && (
-                <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', paddingLeft: '8px', fontWeight: 700 }}>
-                  {errors[task.key]}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {errors.submit && (
@@ -244,7 +306,7 @@ export default function ApplyWL() {
             fontWeight: 700,
           }}
         >
-          All links are manually reviewed.
+          Quote & tag links are manually reviewed.
         </p>
       </motion.div>
 
