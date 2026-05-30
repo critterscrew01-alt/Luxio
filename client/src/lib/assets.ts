@@ -8,7 +8,7 @@ export const BACKGROUND_IMAGES = {
   image2: `${SUPABASE_BASE}/Background%20images/image2.jpg`,
 };
 
-// 30 images: IMG_1440.JPG → IMG_1469.JPG
+// 30 new gallery images: IMG_1437.JPG → IMG_1466.JPG
 export const GALLERY_IMAGES: string[] = Array.from({ length: 30 }, (_, i) =>
-  `${galleryBase}/IMG_${1440 + i}.JPG`
+  `${galleryBase}/IMG_${1437 + i}.JPG`
 );
