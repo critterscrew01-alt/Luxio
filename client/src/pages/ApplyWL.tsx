@@ -46,10 +46,13 @@ const TASKS: {
   },
 ];
 
+// Basic EVM address regex: 0x followed by 40 hex chars
+const EVM_REGEX = /^0x[a-fA-F0-9]{40}$/;
+
 export default function ApplyWL() {
-  const [done, setDone] = useState<Set<TaskKey>>(new Set());
-  const [inputs, setInputs] = useState<Partial<Record<TaskKey, string>>>({});
-  const [errors, setErrors] = useState<Partial<Record<TaskKey | 'submit', string>>>({});
+  const [done, setDone] = useState<<Set<TaskKey>>(new Set());
+  const [inputs, setInputs] = useState<<Partial<<Record<TaskKey, string>>>({});
+  const [errors, setErrors] = useState<<Partial<<Record<TaskKey | 'submit', string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const { xUsername } = useUser();
@@ -65,27 +68,47 @@ export default function ApplyWL() {
   const openTask = (task: (typeof TASKS)[0]) => {
     if (task.url) window.open(task.url, '_blank');
     if (!task.needsInput && !task.isWallet) {
-      setTimeout(() => setDone(p => new Set([...p, task.key])), 1200);
+      setTimeout(() => markDone(task.key), 1200);
     }
   };
 
   const markDone = (key: TaskKey) => {
     setDone(p => new Set([...p, key]));
+    setErrors(p => { const n = { ...p }; delete n[key]; return n; });
   };
 
   const submit = async () => {
-    const errs: Partial<Record<TaskKey | 'submit', string>> = {};
-    if (!inputs.wallet?.trim()) errs.wallet = 'Wallet address required';
-    if (done.has('quote') && !inputs.quote?.trim()) errs.quote = 'Paste your quote link';
+    const errs: Partial<<Record<TaskKey | 'submit', string>> = {};
+
+    // 1. Every task must be marked done
+    for (const t of TASKS) {
+      if (!done.has(t.key)) {
+        errs[t.key] = 'Required — complete this task';
+      }
+    }
+
+    // 2. Wallet must be present AND a valid EVM address
+    const wallet = inputs.wallet?.trim();
+    if (!wallet) {
+      errs.wallet = 'Wallet address required';
+    } else if (!EVM_REGEX.test(wallet)) {
+      errs.wallet = 'Invalid EVM address (must be 0x + 40 hex chars)';
+    }
+
+    // 3. Link inputs must be filled when their task is done
+    if (done.has('quote') && !inputs.quote?.trim()) errs.quote = 'Paste your quote tweet link';
     if (done.has('tag') && !inputs.tag?.trim()) errs.tag = 'Paste your comment link';
 
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
 
     setSubmitting(true);
     try {
       await submitApplication({
         x_username: xUsername,
-        wallet: inputs.wallet!.trim(),
+        wallet: wallet!,
         x_link: `https://x.com/${xUsername}`,
         quote_link: inputs.quote?.trim(),
         tag_link: inputs.tag?.trim(),
@@ -176,6 +199,7 @@ export default function ApplyWL() {
                       value={inputs.wallet || ''}
                       onChange={e => {
                         setInputs(p => ({ ...p, wallet: e.target.value }));
+                        setErrors(p => { const n = { ...p }; delete n.wallet; return n; });
                         if (e.target.value.trim()) markDone('wallet');
                         else setDone(p => { const n = new Set(p); n.delete('wallet'); return n; });
                       }}
@@ -218,6 +242,7 @@ export default function ApplyWL() {
                   )}
                 </div>
 
+                {/* Input field for tasks needing a link */}
                 {task.needsInput && isDone && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -226,7 +251,10 @@ export default function ApplyWL() {
                   >
                     <input
                       value={inputs[task.key] || ''}
-                      onChange={e => setInputs(p => ({ ...p, [task.key]: e.target.value }))}
+                      onChange={e => {
+                        setInputs(p => ({ ...p, [task.key]: e.target.value }));
+                        setErrors(p => { const n = { ...p }; delete n[task.key]; return n; });
+                      }}
                       placeholder={task.inputPlaceholder}
                       style={{
                         width: '100%',
@@ -242,14 +270,10 @@ export default function ApplyWL() {
                         boxSizing: 'border-box',
                       }}
                     />
-                    {errors[task.key] && (
-                      <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', fontWeight: 700 }}>
-                        {errors[task.key]}
-                      </p>
-                    )}
                   </motion.div>
                 )}
 
+                {/* For link tasks not yet marked done, show a "Mark done" helper after clicking */}
                 {task.needsInput && !isDone && task.url && (
                   <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
                     <button
@@ -268,6 +292,13 @@ export default function ApplyWL() {
                       ✓ I've done this
                     </button>
                   </div>
+                )}
+
+                {/* Unified error display for this task */}
+                {errors[task.key] && (
+                  <p style={{ fontSize: '0.7rem', color: '#c0392b', marginTop: '3px', paddingLeft: '8px', fontWeight: 700 }}>
+                    {errors[task.key]}
+                  </p>
                 )}
               </div>
             );
@@ -394,3 +425,4 @@ export default function ApplyWL() {
     </div>
   );
 }
+                        
